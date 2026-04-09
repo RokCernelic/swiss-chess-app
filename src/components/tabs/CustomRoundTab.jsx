@@ -26,19 +26,24 @@ export default function CustomRoundTab({ tournament, players, rounds, onNewRound
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i]
         if (!row || row.length === 0) continue
-        const rawWhite = String(row[0] || '').trim()
-        const rawBlack = String(row[1] || '').trim()
-        const rawResult = row[2] !== undefined ? String(row[2]) : ''
+        // Format: col0=#, col1=Beli, col2=Točke(W), col3=Rezultat, col4=Točke(B), col5=Črni
+        const rawWhite = String(row[1] || '').trim()
+        const rawBlack = String(row[5] || '').trim()
+        const rawResult = row[3] !== undefined ? String(row[3]) : ''
+        const boardNum = parseInt(row[0]) || (parsed.length + 1)
         if (!rawWhite && !rawBlack) continue
+        const isBye = !rawBlack || ['bye','prosti','free','prosti krog'].includes(rawBlack.toLowerCase())
+          || ['bye'].includes(rawResult.trim().toLowerCase())
         const whiteId = matchPlayer(rawWhite, players)
-        const blackId = matchPlayer(rawBlack, players)
-        const result = parseResult(rawResult)
+        const blackId = isBye ? null : matchPlayer(rawBlack, players)
+        const result = isBye ? 'bye' : parseResult(rawResult)
         parsed.push({
-          rawWhite, rawBlack, rawResult,
+          rawWhite, rawBlack: isBye ? '' : rawBlack, rawResult,
           white_player_id: whiteId,
           black_player_id: blackId,
           result,
-          board_number: parsed.length + 1,
+          is_bye: isBye,
+          board_number: boardNum,
         })
       }
       setPreview(parsed)
@@ -47,7 +52,7 @@ export default function CustomRoundTab({ tournament, players, rounds, onNewRound
     e.target.value = ''
   }
 
-  const mismatches = preview.filter(p => !p.white_player_id || !p.black_player_id).length
+  const mismatches = preview.filter(p => !p.white_player_id || (!p.is_bye && !p.black_player_id)).length
 
   const confirmImport = async () => {
     if (mismatches > 0) return
@@ -76,8 +81,8 @@ export default function CustomRoundTab({ tournament, players, rounds, onNewRound
         round_id: roundId,
         white_player_id: p.white_player_id,
         black_player_id: p.black_player_id,
-        result: p.result || null,
-        is_bye: false,
+        result: p.is_bye ? 'bye' : (p.result || null),
+        is_bye: !!p.is_bye,
         board_number: p.board_number,
       }))
       const { data: insertedPairings, error: pe } = await supabase.from('pairings').insert(toInsert).select()
@@ -123,7 +128,7 @@ export default function CustomRoundTab({ tournament, players, rounds, onNewRound
       <div className="card">
         <div className="section-label">Uvozi ročno rundo</div>
         <p style={{ fontSize: 13, color: 'var(--text2)', margin: '4px 0 10px' }}>
-          Stolpci: A = Beli, B = Črni, C = Rezultat. Prva vrstica je glava.
+          Stolpci: A = #, B = Beli, C = Točke, D = Rezultat, E = Točke, F = Črni. Prva vrstica je glava.
         </p>
         <input ref={fileRef} type="file" accept=".xlsx,.xls,.ods,.csv" style={{ display: 'none' }} onChange={parseFile} />
         <button className="btn" onClick={() => fileRef.current.click()}>⬆ Izberi datoteko</button>
@@ -164,18 +169,20 @@ export default function CustomRoundTab({ tournament, players, rounds, onNewRound
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>#</th>
+                  <th style={{ width: 32 }}>#</th>
                   <th>Beli</th>
-                  <th>Rezultat</th>
+                  <th style={{ textAlign: 'right' }}>Točke</th>
+                  <th style={{ textAlign: 'center' }}>Rezultat</th>
+                  <th>Točke</th>
                   <th>Črni</th>
                 </tr>
               </thead>
               <tbody>
                 {preview.map((p, i) => {
                   const wOk = !!p.white_player_id
-                  const bOk = !!p.black_player_id
+                  const bOk = p.is_bye || !!p.black_player_id
                   return (
-                    <tr key={i} className={(!wOk || !bOk) ? '' : ''}>
+                    <tr key={i}>
                       <td style={{ color: 'var(--text3)', fontSize: 12 }}>{p.board_number}</td>
                       <td>
                         {wOk ? (
@@ -184,14 +191,33 @@ export default function CustomRoundTab({ tournament, players, rounds, onNewRound
                           <span style={{ color: 'var(--err-tx)' }}>✕ {p.rawWhite || <em>prazno</em>}</span>
                         )}
                       </td>
-                      <td style={{ textAlign: 'center' }}>{resultBadge(p.result)}</td>
-                      <td>
-                        {bOk ? (
-                          <span style={{ color: 'var(--ok-tx)', fontWeight: 500 }}>{playerName(p.black_player_id)}</span>
-                        ) : (
-                          <span style={{ color: 'var(--err-tx)' }}>✕ {p.rawBlack || <em>prazno</em>}</span>
-                        )}
-                      </td>
+                      {p.is_bye ? (
+                        <>
+                          <td></td>
+                          <td style={{ textAlign: 'center' }}>
+                            <span className="badge badge-info">1 točka (bye)</span>
+                          </td>
+                          <td></td>
+                          <td style={{ color: 'var(--text3)' }}>—</td>
+                        </>
+                      ) : (
+                        <>
+                          <td style={{ textAlign: 'right' }}>
+                            <span className="score-cell">{p.rawResult ? '' : '—'}</span>
+                          </td>
+                          <td style={{ textAlign: 'center' }}>{resultBadge(p.result)}</td>
+                          <td>
+                            <span className="score-cell">{p.rawResult ? '' : '—'}</span>
+                          </td>
+                          <td>
+                            {bOk ? (
+                              <span style={{ color: 'var(--ok-tx)', fontWeight: 500 }}>{playerName(p.black_player_id)}</span>
+                            ) : (
+                              <span style={{ color: 'var(--err-tx)' }}>✕ {p.rawBlack || <em>prazno</em>}</span>
+                            )}
+                          </td>
+                        </>
+                      )}
                     </tr>
                   )
                 })}

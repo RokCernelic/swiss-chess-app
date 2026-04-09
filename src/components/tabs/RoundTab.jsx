@@ -51,13 +51,14 @@ export default function RoundTab({
       const w = playerMap[p.white_player_id]
       const b = playerMap[p.black_player_id]
       if (p.is_bye) {
-        rows.push([p.board_number, w?.name || '', fmtScore(scores[p.white_player_id] || 0), 'BYE', '', ''])
+        rows.push([p.board_number, w?.name || '', fmtScore(scores[p.white_player_id] || 0), 'bye', '', ''])
       } else {
+        const resultStr = p.result === 'draw' ? '0.5-0.5' : (p.result || '')
         rows.push([
           p.board_number,
           w?.name || '',
           fmtScore(scores[p.white_player_id] || 0),
-          p.result || '',
+          resultStr,
           fmtScore(scores[p.black_player_id] || 0),
           b?.name || ''
         ])

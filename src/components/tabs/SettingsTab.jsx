@@ -92,6 +92,20 @@ export default function SettingsTab({ tournament, players, rounds, onPlayersChan
     e.target.value = ''
   }
 
+  const exportPlayers = () => {
+    const rows = [['Priimek', 'Ime', 'ELO']]
+    players.forEach(p => {
+      const parts = p.name.split(' ')
+      const first = parts.length > 1 ? parts.slice(0, -1).join(' ') : p.name
+      const last = parts.length > 1 ? parts[parts.length - 1] : ''
+      rows.push([last, first, p.rating || ''])
+    })
+    const ws = XLSX.utils.aoa_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Igralci')
+    XLSX.writeFile(wb, `${(tournament?.name || 'turnir').replace(/\s+/g, '_')}_igralci.xlsx`)
+  }
+
   const saveMaxRounds = async () => {
     const val = parseInt(maxRounds)
     if (!val || val < 1) return
@@ -189,9 +203,14 @@ export default function SettingsTab({ tournament, players, rounds, onPlayersChan
           style={{ display: 'none' }}
           onChange={handleImport}
         />
-        <button className="btn" onClick={() => fileRef.current.click()}>
-          ⬆ Uvozi Excel / CSV
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className="btn" onClick={() => fileRef.current.click()}>
+            ⬆ Uvozi Excel / CSV
+          </button>
+          <button className="btn" onClick={exportPlayers} disabled={players.length === 0}>
+            ⬇ Izvozi seznam igralcev
+          </button>
+        </div>
       </div>
 
       {/* Add player manually */}

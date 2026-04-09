@@ -7,6 +7,8 @@ export default function Dashboard() {
   const [tournaments, setTournaments] = useState([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [deleting, setDeleting] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -18,12 +20,20 @@ export default function Dashboard() {
   }, [])
 
   const loadTournaments = async (userId) => {
+    // Fetch tournaments with player and round counts
     const { data, error } = await supabase
       .from('tournaments')
-      .select('*')
+      .select('*, players(count), rounds(count)')
       .eq('admin_id', userId)
       .order('created_at', { ascending: false })
-    if (!error) setTournaments(data || [])
+    if (!error) {
+      const enriched = (data || []).map(t => ({
+        ...t,
+        player_count: t.players?.[0]?.count || 0,
+        round_count: t.rounds?.[0]?.count || 0,
+      }))
+      setTournaments(enriched)
+    }
     setLoading(false)
   }
 
@@ -41,6 +51,16 @@ export default function Dashboard() {
     if (!error && data) {
       navigate(`/tournament/${data.id}`)
     }
+  }
+
+  const deleteTournament = async (id) => {
+    setDeleting(true)
+    const { error } = await supabase.from('tournaments').delete().eq('id', id)
+    if (!error) {
+      setTournaments(prev => prev.filter(t => t.id !== id))
+    }
+    setConfirmDeleteId(null)
+    setDeleting(false)
   }
 
   const signOut = async () => {
@@ -80,26 +100,74 @@ export default function Dashboard() {
       ) : (
         <div>
           {tournaments.map(t => (
-            <div key={t.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{t.name}</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <span className={`chip ${t.phase === 'active' ? '' : ''}`}
-                    style={{
-                      background: t.phase === 'active' ? 'var(--ok-bg)' : 'var(--surface2)',
-                      color: t.phase === 'active' ? 'var(--ok-tx)' : 'var(--text2)',
-                      border: `1px solid ${t.phase === 'active' ? 'var(--ok-bd)' : 'var(--border)'}`,
-                    }}
+            <div key={t.id} className="card" style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{t.name}</div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        padding: '2px 8px',
+                        borderRadius: 100,
+                        fontSize: 12,
+                        background: t.phase === 'active' ? 'var(--ok-bg)' : 'var(--surface2)',
+                        color: t.phase === 'active' ? 'var(--ok-tx)' : 'var(--text2)',
+                        border: `1px solid ${t.phase === 'active' ? 'var(--ok-bd)' : 'var(--border)'}`,
+                      }}
+                    >
+                      {t.phase === 'active' ? 'Aktiven' : 'Priprave'}
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--text2)' }}>
+                      {t.player_count} {t.player_count === 1 ? 'igralec' : t.player_count < 5 ? 'igralci' : 'igralcev'}
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--text2)' }}>
+                      {t.round_count} {t.round_count === 1 ? 'krog' : t.round_count < 5 ? 'krogi' : 'krogov'}
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--text3)' }}>
+                      {formatDate(t.created_at)}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <Link className="btn btn-sm btn-primary" to={`/tournament/${t.id}`}>Odpri</Link>
+                  <button
+                    className="btn btn-sm btn-danger"
+                    onClick={() => setConfirmDeleteId(confirmDeleteId === t.id ? null : t.id)}
                   >
-                    {t.phase === 'active' ? 'Aktiven' : 'Priprave'}
-                  </span>
-                  {t.max_rounds && (
-                    <span style={{ fontSize: 12, color: 'var(--text3)' }}>{t.max_rounds} krogov</span>
-                  )}
-                  <span style={{ fontSize: 12, color: 'var(--text3)' }}>{formatDate(t.created_at)}</span>
+                    Izbriši
+                  </button>
                 </div>
               </div>
-              <Link className="btn btn-sm btn-primary" to={`/tournament/${t.id}`}>Odpri</Link>
+
+              {confirmDeleteId === t.id && (
+                <div style={{
+                  marginTop: 10,
+                  padding: '10px 12px',
+                  background: 'var(--err-bg)',
+                  border: '1px solid var(--err-bd)',
+                  borderRadius: 'var(--r)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  flexWrap: 'wrap',
+                  fontSize: 13,
+                  color: 'var(--err-tx)',
+                }}>
+                  <span>Ste prepričani? Turnir <strong>{t.name}</strong> bo trajno izbrisan skupaj z vsemi podatki.</span>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => deleteTournament(t.id)}
+                      disabled={deleting}
+                    >
+                      {deleting ? 'Brišem…' : 'Da, izbriši'}
+                    </button>
+                    <button className="btn btn-sm" onClick={() => setConfirmDeleteId(null)}>Prekliči</button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
