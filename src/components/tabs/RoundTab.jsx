@@ -151,12 +151,12 @@ export default function RoundTab({
         </div>
       )}
 
-      {/* Pairings table */}
-      <div className="table-scroll">
+      {/* Pairings — desktop table */}
+      <div className="table-scroll desktop-only">
         <table className="data-table">
           <thead>
             <tr>
-              <th style={{ width: 32 }}>#</th>
+              <th style={{ width: 52 }}>#</th>
               <th>Beli</th>
               <th style={{ textAlign: 'right' }}>Točke</th>
               <th style={{ textAlign: 'center' }}>Rezultat</th>
@@ -205,6 +205,80 @@ export default function RoundTab({
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Pairings — mobile cards */}
+      <div className="mobile-only">
+        {round.pairings.map(p => {
+          const w = playerMap[p.white_player_id]
+          const b = playerMap[p.black_player_id]
+          const matchId = `${round.round_number}K${String(p.board_number).padStart(2, '0')}`
+          const pending = !p.result && !p.is_bye
+
+          if (p.is_bye) {
+            return (
+              <div key={p.id} className="pairing-card">
+                <div className="pairing-card-header">
+                  <span className="pairing-card-id-sm">{matchId}</span>
+                </div>
+                <div className="mc-names">
+                  <span className="mc-name mc-name-winner" style={{ flex: 1 }}>{w?.name || '?'}</span>
+                  <span className="badge badge-info" style={{ flexShrink: 0 }}>bye · 1 točka</span>
+                </div>
+              </div>
+            )
+          }
+
+          const wWon = p.result === '1-0'
+          const bWon = p.result === '0-1'
+          const isDraw = p.result === 'draw'
+
+          const wPts = fmtScore(scores[p.white_player_id] || 0)
+          const bPts = fmtScore(scores[p.black_player_id] || 0)
+
+          return (
+            <div key={p.id} className={`pairing-card${pending ? ' pairing-card-pending' : ''}`}>
+              <div className="pairing-card-header">
+                <span className="pairing-card-id-sm">
+                  {matchId}
+                  {pending && <span className="dot-orange" style={{ marginLeft: 3 }}/>}
+                </span>
+              </div>
+              <div className="mc-names">
+                {isAdmin ? (
+                  <>
+                    <span className="mc-pts">{wPts}</span>
+                    <button
+                      className={`mc-btn mc-btn-name${wWon ? ' mc-won' : bWon ? ' mc-lost' : ''}`}
+                      onClick={() => handleResult(p.id, '1-0')}
+                    >{w?.name || '?'}</button>
+                    <button
+                      className={`mc-btn mc-btn-draw${isDraw ? ' mc-draw-active' : ''}`}
+                      onClick={() => handleResult(p.id, 'draw')}
+                    >½</button>
+                    <button
+                      className={`mc-btn mc-btn-name${bWon ? ' mc-won' : wWon ? ' mc-lost' : ''}`}
+                      onClick={() => handleResult(p.id, '0-1')}
+                    >{b?.name || '?'}</button>
+                    <span className="mc-pts">{bPts}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="mc-pts">{wPts}</span>
+                    <span className={`mc-name${wWon ? ' mc-name-winner' : bWon ? ' mc-name-loser' : ''}`}>{w?.name || '?'}</span>
+                    {isDraw ? (
+                      <span className="mc-draw-badge">½</span>
+                    ) : (
+                      <span style={{ color: 'var(--text3)', fontSize: 11 }}>vs</span>
+                    )}
+                    <span className={`mc-name${bWon ? ' mc-name-winner' : wWon ? ' mc-name-loser' : ''}`}>{b?.name || '?'}</span>
+                    <span className="mc-pts">{bPts}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {/* Action row */}

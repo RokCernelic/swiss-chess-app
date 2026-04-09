@@ -97,8 +97,8 @@ export default function StandingsTab({
               <th style={{ width: 40 }}>#</th>
               <th>Igralec</th>
               <th style={{ textAlign: 'right' }}>Točke</th>
-              <th style={{ textAlign: 'right' }}>Buchholz</th>
-              <th style={{ textAlign: 'right' }}>ELO</th>
+              <th className="hide-mobile" style={{ textAlign: 'right' }}>Buchholz</th>
+              <th className="hide-mobile" style={{ textAlign: 'right' }}>ELO</th>
             </tr>
           </thead>
           <tbody>
@@ -119,10 +119,10 @@ export default function StandingsTab({
                 <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 600, fontSize: 14 }}>
                   {fmtScore(p.score)}
                 </td>
-                <td style={{ textAlign: 'right', fontSize: 13, color: 'var(--text2)', fontFamily: 'monospace' }}>
+                <td className="hide-mobile" style={{ textAlign: 'right', fontSize: 13, color: 'var(--text2)', fontFamily: 'monospace' }}>
                   {fmtScore(p.buchholz)}
                 </td>
-                <td style={{ textAlign: 'right', fontSize: 13, color: 'var(--text2)' }}>
+                <td className="hide-mobile" style={{ textAlign: 'right', fontSize: 13, color: 'var(--text2)' }}>
                   {p.rating || '—'}
                 </td>
               </tr>
