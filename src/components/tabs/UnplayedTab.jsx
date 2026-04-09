@@ -1,7 +1,4 @@
-import { supabase } from '../../lib/supabase'
-import { calcScores, fmtScore } from '../../lib/swiss'
-
-export default function UnplayedTab({ rounds, players, isAdmin, onResultChange }) {
+export default function UnplayedTab({ rounds, players }) {
   const playerMap = {}
   players.forEach(p => { playerMap[p.id] = p })
 
@@ -12,29 +9,11 @@ export default function UnplayedTab({ rounds, players, isAdmin, onResultChange }
   relevantRounds.forEach(round => {
     round.pairings.forEach(p => {
       if (!p.is_bye && !p.result) {
-        unplayed.push({ ...p, round_number: round.round_number, round_id: round.id })
+        const matchId = `${round.round_number}K${String(p.board_number).padStart(2, '0')}`
+        unplayed.push({ ...p, round_number: round.round_number, matchId })
       }
     })
   })
-
-  const handleResult = async (roundId, pairingId, result) => {
-    if (!isAdmin) return
-    const pairing = rounds.find(r => r.id === roundId)?.pairings.find(p => p.id === pairingId)
-    const newResult = pairing?.result === result ? null : result
-    const { error } = await supabase.from('pairings').update({ result: newResult }).eq('id', pairingId)
-    if (!error) {
-      onResultChange(roundId, pairingId, newResult)
-    }
-  }
-
-  const resultLabel = (result) => {
-    if (result === '1-0') return '1-0'
-    if (result === '0-1') return '0-1'
-    if (result === 'draw') return '½-½'
-    return ''
-  }
-
-  const scores = calcScores(players, rounds)
 
   if (rounds.length <= 1) {
     return (
@@ -63,11 +42,9 @@ export default function UnplayedTab({ rounds, players, isAdmin, onResultChange }
         <table className="data-table">
           <thead>
             <tr>
+              <th style={{ width: 60 }}>#</th>
               <th>Krog</th>
               <th>Beli</th>
-              <th style={{ textAlign: 'right' }}>Točke</th>
-              <th style={{ textAlign: 'center' }}>Rezultat</th>
-              <th>Točke</th>
               <th>Črni</th>
             </tr>
           </thead>
@@ -77,31 +54,9 @@ export default function UnplayedTab({ rounds, players, isAdmin, onResultChange }
               const b = playerMap[p.black_player_id]
               return (
                 <tr key={p.id}>
-                  <td style={{ color: 'var(--text2)', fontSize: 12, whiteSpace: 'nowrap' }}>
-                    Krog {p.round_number}
-                  </td>
+                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text2)' }}>{p.matchId}</td>
+                  <td style={{ fontSize: 13, color: 'var(--text2)' }}>Krog {p.round_number}</td>
                   <td style={{ fontWeight: 500 }}>{w?.name || '?'}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <span className="score-cell">{fmtScore(scores[p.white_player_id] || 0)}</span>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    {isAdmin ? (
-                      <div style={{ display: 'flex', gap: 3, justifyContent: 'center' }}>
-                        {[['1-0', 'sel-win', '1-0'], ['draw', 'sel-draw', '½-½'], ['0-1', 'sel-loss', '0-1']].map(([val, cls, label]) => (
-                          <button
-                            key={val}
-                            className={`res-btn${p.result === val ? ' ' + cls : ''}`}
-                            onClick={() => handleResult(p.round_id, p.id, val)}
-                          >{label}</button>
-                        ))}
-                      </div>
-                    ) : (
-                      <span style={{ color: 'var(--text3)' }}>—</span>
-                    )}
-                  </td>
-                  <td>
-                    <span className="score-cell">{fmtScore(scores[p.black_player_id] || 0)}</span>
-                  </td>
                   <td style={{ fontWeight: 500 }}>{b?.name || '?'}</td>
                 </tr>
               )

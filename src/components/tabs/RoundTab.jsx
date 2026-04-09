@@ -50,12 +50,13 @@ export default function RoundTab({
     round.pairings.forEach((p) => {
       const w = playerMap[p.white_player_id]
       const b = playerMap[p.black_player_id]
+      const matchId = `${round.round_number}K${String(p.board_number).padStart(2, '0')}`
       if (p.is_bye) {
-        rows.push([p.board_number, w?.name || '', fmtScore(scores[p.white_player_id] || 0), 'bye', '', ''])
+        rows.push([matchId, w?.name || '', fmtScore(scores[p.white_player_id] || 0), 'bye', '', ''])
       } else {
         const resultStr = p.result === 'draw' ? '0.5-0.5' : (p.result || '')
         rows.push([
-          p.board_number,
+          matchId,
           w?.name || '',
           fmtScore(scores[p.white_player_id] || 0),
           resultStr,
@@ -167,11 +168,12 @@ export default function RoundTab({
             {round.pairings.map(p => {
               const w = playerMap[p.white_player_id]
               const b = playerMap[p.black_player_id]
+              const matchId = `${round.round_number}K${String(p.board_number).padStart(2, '0')}`
               if (p.is_bye) {
                 return (
                   <tr key={p.id}>
-                    <td style={{ color: 'var(--text3)', fontSize: 12 }}>
-                      {p.board_number}
+                    <td style={{ fontFamily: 'monospace', color: 'var(--text3)', fontSize: 12 }}>
+                      {matchId}
                     </td>
                     <td colSpan={2} style={{ fontWeight: 500 }}>{w?.name || '?'}</td>
                     <td style={{ textAlign: 'center' }}>
@@ -184,8 +186,8 @@ export default function RoundTab({
               const pending = !p.result
               return (
                 <tr key={p.id}>
-                  <td style={{ color: 'var(--text3)', fontSize: 12 }}>
-                    {pending ? <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>{p.board_number}<span className="dot-orange"/></span> : p.board_number}
+                  <td style={{ fontFamily: 'monospace', color: 'var(--text3)', fontSize: 12 }}>
+                    {pending ? <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>{matchId}<span className="dot-orange"/></span> : matchId}
                   </td>
                   <td style={{ fontWeight: 500 }}>{w?.name || '?'}</td>
                   <td style={{ textAlign: 'right' }}>

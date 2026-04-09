@@ -181,9 +181,10 @@ export default function CustomRoundTab({ tournament, players, rounds, onNewRound
                 {preview.map((p, i) => {
                   const wOk = !!p.white_player_id
                   const bOk = p.is_bye || !!p.black_player_id
+                  const matchId = `${targetRound}K${String(p.board_number).padStart(2, '0')}`
                   return (
                     <tr key={i}>
-                      <td style={{ color: 'var(--text3)', fontSize: 12 }}>{p.board_number}</td>
+                      <td style={{ fontFamily: 'monospace', color: 'var(--text3)', fontSize: 12 }}>{matchId}</td>
                       <td>
                         {wOk ? (
                           <span style={{ color: 'var(--ok-tx)', fontWeight: 500 }}>{playerName(p.white_player_id)}</span>
