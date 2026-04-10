@@ -293,7 +293,7 @@ export default function RoundTab({
               + Uvozi ročno rundo
             </button>
           )}
-          {isLatest && !isComplete && allEntered && (
+          {isLatest && !isComplete && (
             <button
               className="btn btn-primary btn-sm"
               onClick={generateNextRound}
@@ -302,7 +302,7 @@ export default function RoundTab({
               {generating ? 'Žrebam…' : `Žrebaj krog ${round.round_number + 1} →`}
             </button>
           )}
-          {isLatest && isComplete && allEntered && (
+          {isLatest && isComplete && (
             <button className="btn btn-primary btn-sm" onClick={onFinish}>
               Končna razvrstitev →
             </button>

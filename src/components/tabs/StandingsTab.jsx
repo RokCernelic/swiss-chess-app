@@ -136,7 +136,7 @@ export default function StandingsTab({
           <button className="btn btn-sm" onClick={() => onTabChange('custom')}>
             + Uvozi ročno rundo
           </button>
-          {rounds.length < maxR && rounds.length > 0 && !hasPending && (
+          {rounds.length < maxR && rounds.length > 0 && (
             <button className="btn btn-primary btn-sm" onClick={generateNextRound}>
               Žrebaj krog {(rounds[rounds.length - 1]?.round_number || 0) + 1} →
             </button>
