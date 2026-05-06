@@ -158,7 +158,9 @@ export default function SettingsTab({ tournament, players, rounds, onPlayersChan
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${tournament.name.replace(/\s+/g, '_')}.json`
+    const d = new Date()
+    const dateStr = `${d.getFullYear()}_${String(d.getMonth()+1).padStart(2,'0')}_${String(d.getDate()).padStart(2,'0')}`
+    a.download = `${dateStr}_${tournament.name.replace(/\s+/g, '_')}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
