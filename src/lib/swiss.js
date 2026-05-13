@@ -72,27 +72,29 @@ export function genPairings(players, rounds) {
   }
 
   const pairings = [], paired = new Set();
-  const half = pool.length / 2;
-  const top = pool.slice(0, half), bottom = pool.slice(half);
 
-  for (let i = 0; i < top.length; i++) {
-    const a = top[i]; let bestJ = -1;
-    for (let k = 0; k < bottom.length; k++) {
-      const j = (i + k) % bottom.length;
-      if (!paired.has(bottom[j].id) && !opp[a.id].has(bottom[j].id)) { bestJ = j; break; }
-    }
-    if (bestJ === -1) {
-      for (let j = 0; j < bottom.length; j++) {
-        if (!paired.has(bottom[j].id)) { bestJ = j; break; }
-      }
-    }
-    if (bestJ !== -1) {
-      const b = bottom[bestJ];
-      let wId = a.id, bId = b.id;
-      if ((colors[a.id] || 0) > (colors[b.id] || 0)) { wId = b.id; bId = a.id; }
-      pairings.push({ white_player_id: wId, black_player_id: bId, result: null, is_bye: false, board_number: pairings.length + 1 });
-      paired.add(a.id); paired.add(b.id);
-    }
+  // Greedy pairing: for each unpaired player (sorted by score),
+  // find the best unpaired opponent they haven't played yet.
+  // Prefer opponents close in score. Only repeat if no other option.
+  const remaining = [...pool];
+
+  while (remaining.filter(p => !paired.has(p.id)).length >= 2) {
+    // Pick the highest-ranked unpaired player
+    const a = remaining.find(p => !paired.has(p.id));
+    if (!a) break;
+
+    const candidates = remaining.filter(p => !paired.has(p.id) && p.id !== a.id);
+
+    // Prefer unplayed opponent (never faced before)
+    let best = candidates.find(c => !opp[a.id].has(c.id));
+    // Fallback: anyone unpaired (repeat matchup)
+    if (!best) best = candidates[0];
+    if (!best) break;
+
+    let wId = a.id, bId = best.id;
+    if ((colors[a.id] || 0) > (colors[best.id] || 0)) { wId = best.id; bId = a.id; }
+    pairings.push({ white_player_id: wId, black_player_id: bId, result: null, is_bye: false, board_number: pairings.length + 1 });
+    paired.add(a.id); paired.add(best.id);
   }
 
   if (byeP) pairings.push({ white_player_id: byeP.id, black_player_id: null, result: 'bye', is_bye: true, board_number: pairings.length + 1 });
